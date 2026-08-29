@@ -90,18 +90,13 @@
         // 1. Triggere den Deep Link sofort beim Laden
         window.location.href = 'familynews://restart';
 
-        // 2. Versuche den Tab nach 400ms im Hintergrund zu schliessen
-        setTimeout(function() {
-            var win = window.open('about:blank', '_self');
-            win.close();
-        }, 400);
     </script>
 </head>
 <body>
 
     <div class="container">
         <div class="icon-wrapper">
-            <span class="icon">✴️</span>
+            <span class="icon">↺</span>
         </div>
         <h2>App Restarted</h2>
         <p>You can close this tab now.</p>
