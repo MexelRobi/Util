@@ -1,19 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FamilyNews Redirect</title>
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-sub: #8e8e93;
+            --accent: #ff3b30;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1c1c1e;
+                --text-main: #ffffff;
+                --text-sub: #8e8e93;
+                --accent: #ff453a;
+            }
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 32px 24px;
+            border-radius: 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            background-color: rgba(255, 59, 48, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px auto;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .icon-wrapper {
+                background-color: rgba(255, 69, 58, 0.15);
+            }
+        }
+
+        .icon {
+            font-size: 28px;
+        }
+
+        h2 {
+            color: var(--text-main);
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        p {
+            color: var(--text-sub);
+            font-size: 15px;
+            line-height: 1.4;
+            margin: 0;
+        }
+    </style>
     <script>
-        // Deep Link abfeuern
+        // 1. Triggere den Deep Link sofort beim Laden
         window.location.href = 'familynews://restart';
 
+        // 2. Versuche den Tab nach 400ms im Hintergrund zu schliessen
         setTimeout(function() {
-            // Ein neues leeres Fenster öffnen, das die Kontrolle übernimmt
             var win = window.open('about:blank', '_self');
-            // Das neue Fenster schliessen
             win.close();
         }, 400);
     </script>
 </head>
 <body>
+
+    <div class="container">
+        <div class="icon-wrapper">
+            <span class="icon">✴️</span>
+        </div>
+        <h2>App Restarted</h2>
+        <p>You can close this tab now.</p>
+    </div>
+
 </body>
 </html>
