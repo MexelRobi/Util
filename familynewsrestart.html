@@ -2,23 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Restarting...</title>
     <script>
-        // 1. Den Deep Link an deine App senden
+        // Deep Link abfeuern
         window.location.href = 'familynews://restart';
-        
-        // 2. Kurz warten (300ms), damit iOS Zeit hat, die App zu wechseln
+
         setTimeout(function() {
-            // 💡 DER TRICK: Wir gaukeln Safari vor, die Seite hätte sich selbst geöffnet
-            window.open('', '_self', '');
-            
-            // Jetzt erlaubt Safari das Schliessen des Tabs!
-            window.close();
-        }, 300);
+            // Ein neues leeres Fenster öffnen, das die Kontrolle übernimmt
+            var win = window.open('about:blank', '_self');
+            // Das neue Fenster schliessen
+            win.close();
+        }, 400);
     </script>
 </head>
-<body style="background-color: #f2f2f7; font-family: -apple-system; text-align: center; margin-top: 100px;">
-    <h2>Restarting App...</h2>
-    <p>This tab will close automatically.</p>
+<body>
 </body>
 </html>
