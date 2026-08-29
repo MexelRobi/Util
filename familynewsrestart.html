@@ -87,9 +87,13 @@
         }
     </style>
     <script>
-        // 1. Triggere den Deep Link sofort beim Laden
-        window.location.href = 'familynews://restart';
-
+        // Wartet, bis die Seite komplett geladen und gezeichnet wurde
+        window.addEventListener('DOMContentLoaded', () => {
+            // Gibt dem Browser 100ms Zeit für das visuelle Rendern
+            setTimeout(() => {
+                window.location.href = 'familynews://restart';
+            }, 100);
+        });
     </script>
 </head>
 <body>
