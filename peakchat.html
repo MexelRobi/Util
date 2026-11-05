@@ -57,15 +57,42 @@
   </div>
 
   <script>
-    // FÜGE HIER DEINE NEUE GOOGLE APPS SCRIPT WEB-APP URL EIN:
     const API_URL = "https://script.google.com/macros/s/AKfycbzp5fCzLA91VeM5mtc9DbWDWLnDtsTY5oSViGb1uxpZlkTB_VEMM7U1Fl0VCdm45zgf/exec";
 
     let userKey = "";
     let myName = "";
     let lastLoadedJson = ""; 
 
+    // PRÜFUNG BEIM LADEN DER SEITE (Automatischer Login)
+    window.onload = async function() {
+      const savedKey = localStorage.getItem("pg_user_key");
+      const savedName = localStorage.getItem("pg_user_name");
+
+      if (savedKey && savedName) {
+        userKey = savedKey;
+        myName = savedName;
+        
+        // Benutzeroberfläche direkt umschalten
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('chat-box').style.display = 'flex';
+        document.getElementById('active-user').innerText = myName;
+        document.getElementById('msg-text').disabled = false;
+        document.getElementById('send-btn').disabled = false;
+        
+        // Direkt Nachrichten laden und Intervall starten
+        try {
+          const messages = await callApi({ action: "getMessages", key: userKey });
+          renderMessages(messages);
+          setInterval(loadMessagesSilently, 4000);
+        } catch (err) {
+          // Falls gespeicherter Key serverseitig ungültig ist, lokal löschen und Login zeigen
+          localStorage.clear();
+          window.location.reload();
+        }
+      }
+    };
+
     async function callApi(payload) {
-      // Wichtig: 'text/plain' verhindert CORS Preflight-Blockaden von Google Apps Script
       const response = await fetch(API_URL, {
         method: "POST",
         mode: "cors",
@@ -79,14 +106,22 @@
     }
 
     async function login() {
-      userKey = document.getElementById('key').value.trim();
-      myName = document.getElementById('username').value.trim();
+      const inputName = document.getElementById('username').value.trim();
+      const inputKey = document.getElementById('key').value.trim();
       
-      if (!userKey || !myName) return alert("Bitte Name und Key eingeben!");
+      if (!inputKey || !inputName) return alert("Bitte Name und Key eingeben!");
       document.getElementById('login-btn').disabled = true;
       
       try {
-        const messages = await callApi({ action: "getMessages", key: userKey });
+        // Validierungs-Abruf gegen die Google API
+        const messages = await callApi({ action: "getMessages", key: inputKey });
+        
+        // DATEN PERSISTENT SPEICHERN
+        localStorage.setItem("pg_user_key", inputKey);
+        localStorage.setItem("pg_user_name", inputName);
+        
+        userKey = inputKey;
+        myName = inputName;
         
         document.getElementById('login-box').style.display = 'none';
         document.getElementById('chat-box').style.display = 'flex';
