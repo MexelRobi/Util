@@ -1,127 +1,927 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PeakChat</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b141a">
+  <title>PeakChat</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #0b141a;
+      --panel: #111b21;
+      --surface: #1b282f;
+      --line: rgba(255,255,255,.065);
+      --green: #00a884;
+      --muted: #8696a0;
+      --text: #e9edef;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -.015em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 60px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: -.04em;
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #737d76;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.035);
+      transition: background .25s, box-shadow .25s;
+    }
+
+    .dot.online {
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(0,168,132,.12);
+    }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+
+    .chat {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    .chat-head {
+      height: 56px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 26px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chat-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -.02em;
+    }
+
+    /* Messages */
+
+    .messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 28px 6%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #34434b transparent;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: #34434b;
+      border-radius: 10px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .welcome {
+      margin: auto;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    /* Date sections */
+
+    .date-separator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 18px 0 10px;
+      animation: date-in .3s ease both;
+    }
+
+    .date-separator::before,
+    .date-separator::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      max-width: 100px;
+      background: var(--line);
+    }
+
+    .date-separator span {
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #172229;
+      color: #aebac1;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+
+    @keyframes date-in {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      max-width: min(78%, 760px);
+      animation: message-in .22s cubic-bezier(.2,.8,.2,1) both;
+      transform-origin: bottom;
+    }
+
+    @keyframes message-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .message-content {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 5px 2px;
+    }
+
+    .author {
+      color: #53bdeb;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 9px;
+      opacity: .7;
+    }
+
+    .message-text {
+      display: inline-block;
+      max-width: 100%;
+      padding: 10px 13px;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.035);
+      border-radius: 3px 12px 12px 12px;
+      color: var(--text);
+      font-size: 12.5px;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      transition: border-color .2s, background .2s;
+    }
+
+    .message.outgoing {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.outgoing .message-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .message.outgoing .meta {
+      justify-content: flex-end;
+    }
+
+    .message.outgoing .author,
+    .message.outgoing .avatar {
+      display: none;
+    }
+
+    .message.outgoing .message-text {
+      background: #075e4e;
+      border-radius: 12px 3px 12px 12px;
+    }
+
+    /* Composer */
+
+    .composer {
+      padding: 15px max(22px, 6%) 18px;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+    }
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 7px;
+      background: #172229;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    .input-wrap:focus-within {
+      border-color: rgba(0,168,132,.55);
+      background: #19272e;
+      box-shadow: 0 0 0 3px rgba(0,168,132,.08);
+    }
+
+    #message-input {
+      flex: 1;
+      min-width: 0;
+      padding: 11px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12.5px;
+    }
+
+    #message-input::placeholder {
+      color: var(--muted);
+    }
+
+    .send {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--green);
+      color: #062d25;
+      font-size: 0;
+      transition: transform .18s, background .18s, box-shadow .18s;
+    }
+
+    .send::after {
+      content: "➤";
+      font-size: 15px;
+    }
+
+    .send:hover {
+      background: #06cf9c;
+      transform: scale(1.06);
+      box-shadow: 0 3px 12px rgba(0,168,132,.2);
+    }
+
+    .send:active {
+      transform: scale(.93);
+    }
+
+    .send:disabled {
+      opacity: .5;
+      cursor: wait;
+    }
+
+    /* Setup */
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .setup {
+      width: 100%;
+      max-width: 350px;
+      padding: 27px;
+      background: #152128;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      animation: setup-in .3s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    @keyframes setup-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .setup h2 {
+      margin: 0 0 18px;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -.045em;
+    }
+
+    .field-label {
+      display: block;
+      margin: 13px 0 6px;
+      color: #d1d7db;
+      font-size: 11px;
+      font-weight: 550;
+    }
+
+    .field {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: 0;
+      background: var(--panel);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      resize: vertical;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field:focus {
+      border-color: rgba(0,168,132,.7);
+      box-shadow: 0 0 0 3px rgba(0,168,132,.08);
+    }
+
+    .connect {
+      width: 100%;
+      margin-top: 16px;
+      padding: 11px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--green);
+      color: #062d25;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      transition: transform .18s, background .18s;
+    }
+
+    .connect:hover {
+      background: #06cf9c;
+      transform: translateY(-1px);
+    }
+
+    .connect:active {
+      transform: scale(.98);
+    }
+
+    .connect:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    /* Toast */
+
+    .toast {
+      position: fixed;
+      z-index: 30;
+      right: 22px;
+      bottom: 22px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 11px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.2);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity .25s, transform .25s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Mobile */
+
+    @media (max-width: 720px) {
+      header {
+        height: 54px;
+        padding: 0 15px;
+      }
+
+      .chat-head {
+        padding: 0 15px;
+      }
+
+      .messages {
+        padding: 16px;
+      }
+
+      .message {
+        max-width: 92%;
+      }
+
+      .composer {
+        padding: 10px 12px 12px;
+      }
+
+      .connection {
+        font-size: 10px;
+      }
+
+      .setup {
+        padding: 22px;
+      }
+    }
+
+    /* Accessibility */
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
 </head>
-<body class="bg-[#18181b] text-[#f4f4f5] h-screen flex flex-col font-sans">
 
-    <!-- SETUP SCREEN (Ploppt auf, wenn Name oder Key fehlen) -->
-    <div id="setup-screen" class="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center hidden">
-        <div class="bg-[#27272a] p-6 rounded-lg border border-[#3f3f46] w-85 shadow-xl">
-            <h2 class="text-xl font-bold text-emerald-400 mb-1">PeakChat Setup</h2>
-            <p class="text-[11px] text-[#a1a1aa] mb-4">Enter your workspace credentials to connect.</p>
-            
-            <input type="text" id="setup-username" placeholder="Your Display Name" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-3 focus:outline-none">
-            <textarea id="setup-key" placeholder="Paste Supabase Anon Key here..." rows="3" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-4 focus:outline-none resize-none"></textarea>
-            
-            <button onclick="saveSetup()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-2 rounded text-sm font-semibold cursor-pointer">Connect Workspace</button>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand-name">PeakChat</div>
+
+      <div class="connection">
+        <span id="status-dot" class="dot"></span>
+        <span id="connection-text">Offline</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="chat">
+        <div class="chat-head">
+          <div class="chat-title">General</div>
         </div>
-    </div>
 
-    <!-- UTILITY TOP BAR -->
-    <div class="bg-[#27272a] px-4 py-2 border-b border-[#3f3f46] flex items-center justify-between text-xs">
-        <span class="font-bold text-emerald-400 text-sm">PeakChat</span>
-        <div class="flex items-center space-x-2">
-            <input type="text" id="panic-url" value="https://wikipedia.org" class="bg-[#18181b] border border-[#52525b] rounded px-2 py-1 w-40 text-[#f4f4f5] focus:outline-none">
-            <button onclick="triggerLocalPanic()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded font-bold cursor-pointer">PANIC (ESC)</button>
+        <div id="message-container" class="messages">
+          <div id="welcome" class="welcome">
+            <p>No messages yet</p>
+          </div>
         </div>
-    </div>
 
-    <!-- MAIN CHAT INTERFACE -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <div id="message-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-        
-        <!-- INPUT FRAME -->
-        <div class="p-3 bg-[#27272a] border-t border-[#3f3f46] flex gap-2">
-            <input type="text" id="message-input" placeholder="Message..." class="flex-1 bg-[#18181b] border border-[#52525b] rounded px-3 py-2 text-sm focus:outline-none">
-            <button onclick="sendMessage()" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-sm font-semibold cursor-pointer">Send</button>
+        <div class="composer">
+          <div class="input-wrap">
+            <input
+              id="message-input"
+              maxlength="2000"
+              placeholder="Message"
+              autocomplete="off"
+            >
+
+            <button
+              id="send-button"
+              class="send"
+              onclick="sendMessage()"
+              aria-label="Send message"
+            >Send</button>
+          </div>
         </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="setup-screen" class="modal hidden">
+    <div class="setup">
+      <h2>PeakChat</h2>
+
+      <label class="field-label" for="setup-username">Name</label>
+      <input
+        id="setup-username"
+        class="field"
+        type="text"
+        maxlength="32"
+        placeholder="Your name"
+        autocomplete="nickname"
+      >
+
+      <label class="field-label" for="setup-key">Key</label>
+      <textarea
+        id="setup-key"
+        class="field"
+        rows="2"
+        placeholder="Paste key"
+        autocomplete="off"
+        spellcheck="false"
+      ></textarea>
+
+      <button
+        id="connect-button"
+        class="connect"
+        onclick="saveSetup()"
+      >Connect</button>
     </div>
+  </div>
 
-    <script>
-        // TRAGE HIER NUR DEINE PROJECT URL EIN (Der Key bleibt leer!)
-        const SUPABASE_URL = "https://bgdosmqrxhkcgerqamku.supabase.co";
-        
-        let supabase = null;
-        let currentUser = "";
+  <div id="toast" class="toast"></div>
 
-        window.addEventListener('DOMContentLoaded', () => {
-            currentUser = localStorage.getItem('peak_chat_user');
-            const savedKey = localStorage.getItem('peak_chat_anon_key');
+  <script>
+    const SUPABASE_URL = "https://bgdosmqrxhkcgerqamku.supabase.co";
 
-            if (!currentUser || !savedKey) {
-                // Wenn nichts gespeichert ist -> Setup zeigen
-                document.getElementById('setup-screen').classList.remove('hidden');
-            } else { 
-                // Wenn Daten da sind -> Direkt einloggen
-                initSupabase(savedKey);
-            }
+    let db = null;
+    let currentUser = "";
+    let channel = null;
+    let toastTimer = null;
+    let lastRenderedDate = null;
+
+    const seen = new Set();
+    const $ = id => document.getElementById(id);
+
+    window.addEventListener("DOMContentLoaded", () => {
+      currentUser = localStorage.getItem("peak_chat_user") || "";
+      const key = localStorage.getItem("peak_chat_anon_key") || "";
+
+      if (!currentUser || !key) {
+        $("setup-screen").classList.remove("hidden");
+      } else {
+        initSupabase(key);
+      }
+    });
+
+    async function saveSetup() {
+      const user = $("setup-username").value.trim();
+      const key = $("setup-key").value.trim();
+
+      if (!user || !key) {
+        return showToast("Enter your name and key.");
+      }
+
+      if (user.length > 32) {
+        return showToast("Display name is too long.");
+      }
+
+      $("connect-button").disabled = true;
+      $("connect-button").textContent = "Connecting...";
+
+      currentUser = user;
+
+      try {
+        const success = await initSupabase(key);
+
+        if (success && db) {
+          localStorage.setItem("peak_chat_user", user);
+          localStorage.setItem("peak_chat_anon_key", key);
+          $("setup-screen").classList.add("hidden");
+        }
+      } finally {
+        $("connect-button").disabled = false;
+        $("connect-button").textContent = "Connect";
+      }
+    }
+
+    async function initSupabase(key) {
+      setConnection(false, "Connecting");
+
+      try {
+        if (
+          !window.supabase ||
+          typeof window.supabase.createClient !== "function"
+        ) {
+          throw new Error(
+            "Supabase SDK did not load. Check your internet connection."
+          );
+        }
+
+        db = window.supabase.createClient(SUPABASE_URL, key, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
         });
 
-        function saveSetup() {
-            const user = document.getElementById('setup-username').value.trim();
-            const key = document.getElementById('setup-key').value.trim();
-            
-            if (user && key) {
-                localStorage.setItem('peak_chat_user', user);
-                localStorage.setItem('peak_chat_anon_key', key);
-                currentUser = user;
-                document.getElementById('setup-screen').classList.add('hidden');
-                initSupabase(key);
+        const check = await Promise.race([
+          db.from("messages").select("id").limit(1),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Supabase request timed out.")),
+              10000
+            )
+          )
+        ]);
+
+        if (check.error) throw check.error;
+
+        await loadHistory();
+
+        if (channel) {
+          await db.removeChannel(channel);
+        }
+
+        channel = db
+          .channel("peakchat-room")
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "messages"
+            },
+            payload => renderMessage(payload.new)
+          )
+          .subscribe(status => {
+            if (status === "SUBSCRIBED") {
+              setConnection(true, "Online");
+            } else if (
+              status === "CHANNEL_ERROR" ||
+              status === "TIMED_OUT"
+            ) {
+              setConnection(false, "Connection error");
+            } else if (status === "CLOSED") {
+              setConnection(false, "Offline");
             }
-        }
+          });
 
-        function initSupabase(anonKey) {
-            try {
-                // Supabase wird erst JETZT dynamisch mit dem eingegebenen Key initialisiert
-                supabase = Supabase.createClient(SUPABASE_URL, anonKey);
-                
-                // Chat starten
-                loadHistory();
-                supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, 
-                    payload => { renderMessage(payload.new); }
-                ).subscribe();
-            } catch (err) {
-                alert("Connection failed. Check your Anon Key!");
-                localStorage.clear();
-                window.location.reload();
-            }
-        }
+        return true;
 
-        async function loadHistory() {
-            const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: true }).limit(100);
-            if (data) data.forEach(renderMessage);
-        }
+      } catch (err) {
+        console.error("[PeakChat]", err);
+        db = null;
+        setConnection(false, "Connection failed");
+        showToast(err.message || "Could not connect to Supabase.");
+        $("setup-screen").classList.remove("hidden");
+        return false;
+      }
+    }
 
-        async function sendMessage() {
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = '';
-            await supabase.from('messages').insert([{ user: currentUser, text }]);
-        }
+    function setConnection(online, label) {
+      $("status-dot").classList.toggle("online", online);
+      $("connection-text").textContent = label;
+    }
 
-        function renderMessage(msg) {
-            const container = document.getElementById('message-container');
-            const html = `
-                <div class="text-sm bg-[#27272a]/40 p-2 rounded max-w-2xl">
-                    <div class="flex items-baseline space-x-2 mb-0.5">
-                        <span class="font-bold text-emerald-400 text-xs">${msg.user}</span>
-                        <span class="text-[10px] text-[#a1a1aa]">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    <p class="text-[#f4f4f5] text-[13px] break-words">${msg.text}</p>
-                </div>`;
-            container.insertAdjacentHTML('beforeend', html);
-            container.scrollTop = container.scrollHeight;
-        }
+    async function loadHistory() {
+      const { data, error } = await db
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: true })
+        .limit(100);
 
-        document.getElementById('message-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-        function triggerLocalPanic() { window.location.href = document.getElementById('panic-url').value.trim() || 'https://google.com'; }
-        window.addEventListener('keydown', e => { if (e.key === 'Escape') triggerLocalPanic(); });
-    </script>
+      if (error) throw error;
+
+      (data || []).forEach(renderMessage);
+    }
+
+    async function sendMessage() {
+      const input = $("message-input");
+      const text = input.value.trim();
+      const button = $("send-button");
+
+      if (!text) return;
+
+      if (!db) {
+        return showToast("Not connected to Supabase yet.");
+      }
+
+      button.disabled = true;
+
+      try {
+        const { error } = await db
+          .from("messages")
+          .insert([{ user: currentUser, text }]);
+
+        if (error) throw error;
+
+        input.value = "";
+        input.focus();
+
+      } catch (err) {
+        console.error("[PeakChat send]", err);
+        showToast(err.message || "Message could not be sent.");
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    /* Date helpers */
+
+    function getDateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDateLabel(date) {
+      const now = new Date();
+
+      const today = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+      const messageDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+
+      const difference = Math.round(
+        (today - messageDay) / 86400000
+      );
+
+      if (difference === 0) return "Today";
+      if (difference === 1) return "Yesterday";
+
+      return new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: date.getFullYear() !== now.getFullYear()
+          ? "numeric"
+          : undefined
+      }).format(date);
+    }
+
+    function renderMessage(msg) {
+      if (!msg) return;
+
+      const identity =
+        msg.id ?? [msg.user, msg.created_at, msg.text].join("|");
+
+      if (seen.has(identity)) return;
+      seen.add(identity);
+
+      const container = $("message-container");
+      $("welcome")?.remove();
+
+      const date = new Date(msg.created_at);
+
+      if (Number.isNaN(date.getTime())) {
+        console.warn("[PeakChat] Invalid message date:", msg.created_at);
+        return;
+      }
+
+      const dateKey = getDateKey(date);
+
+      // Insert a date separator when the day changes.
+      if (dateKey !== lastRenderedDate) {
+        const separator = document.createElement("div");
+        separator.className = "date-separator";
+
+        const label = document.createElement("span");
+        label.textContent = getDateLabel(date);
+
+        separator.appendChild(label);
+        container.appendChild(separator);
+
+        lastRenderedDate = dateKey;
+      }
+
+      const row = document.createElement("div");
+
+      row.className =
+        "message" +
+        (String(msg.user || "") === currentUser ? " outgoing" : "");
+
+      const content = document.createElement("div");
+      content.className = "message-content";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const author = document.createElement("span");
+      author.className = "author";
+      author.textContent = msg.user || "Unknown";
+
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      const body = document.createElement("div");
+      body.className = "message-text";
+      body.textContent = msg.text ?? "";
+
+      meta.append(author, time);
+      content.append(meta, body);
+      row.append(content);
+      container.append(row);
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+
+      toast.textContent = message;
+      toast.classList.add("show");
+
+      clearTimeout(toastTimer);
+
+      toastTimer = setTimeout(
+        () => toast.classList.remove("show"),
+        3500
+      );
+    }
+
+    $("message-input").addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
 </body>
 </html>
