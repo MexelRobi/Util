@@ -211,6 +211,19 @@
       transform-origin: bottom;
     }
 
+    /* HIER EINFÜGEN: Damit Links blau und anklickbar aussehen */
+    .message a {
+      color: #007bff;
+      text-decoration: underline;
+      cursor: pointer;
+      word-break: break-all;
+    }
+    .message a:hover {
+      color: #0056b3;
+    }
+
+
+
     @keyframes message-in {
       from {
         opacity: 0;
@@ -666,6 +679,15 @@
         $("connect-button").textContent = "Connect";
       }
     }
+      
+    function makeLinksClickable(text) {
+      const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+      return text.replace(urlRegex, function(url) {
+        const hyperlink = url.startsWith('http') ? url : 'https://' + url;
+        return `<a href="${hyperlink}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
+
 
     async function initSupabase(key) {
       setConnection(false, "Connecting");
@@ -892,7 +914,8 @@
 
       const body = document.createElement("div");
       body.className = "message-text";
-      body.textContent = msg.text ?? "";
+      //body.textContent = msg.text ?? "";
+      body.innerHTML = makeLinksClickable(msg.text ?? "");
 
       meta.append(author, time);
       content.append(meta, body);
