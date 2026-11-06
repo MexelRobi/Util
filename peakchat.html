@@ -9,13 +9,16 @@
 </head>
 <body class="bg-[#18181b] text-[#f4f4f5] h-screen flex flex-col font-sans">
 
-    <!-- SETUP SCREEN -->
+    <!-- SETUP SCREEN (Ploppt auf, wenn Name oder Key fehlen) -->
     <div id="setup-screen" class="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center hidden">
-        <div class="bg-[#27272a] p-6 rounded-lg border border-[#3f3f46] w-80 shadow-xl">
-            <h2 class="text-xl font-bold text-emerald-400 mb-4">PeakChat Setup</h2>
-            <input type="text" id="setup-username" placeholder="Display Name" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-3 focus:outline-none">
-            <input type="password" id="setup-key" placeholder="Access Key" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-4 focus:outline-none">
-            <button onclick="saveSetup()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-2 rounded text-sm font-semibold cursor-pointer">Connect</button>
+        <div class="bg-[#27272a] p-6 rounded-lg border border-[#3f3f46] w-85 shadow-xl">
+            <h2 class="text-xl font-bold text-emerald-400 mb-1">PeakChat Setup</h2>
+            <p class="text-[11px] text-[#a1a1aa] mb-4">Enter your workspace credentials to connect.</p>
+            
+            <input type="text" id="setup-username" placeholder="Your Display Name" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-3 focus:outline-none">
+            <textarea id="setup-key" placeholder="Paste Supabase Anon Key here..." rows="3" class="w-full bg-[#18181b] border border-[#52525b] rounded p-2 text-sm mb-4 focus:outline-none resize-none"></textarea>
+            
+            <button onclick="saveSetup()" class="w-full bg-emerald-600 hover:bg-emerald-700 py-2 rounded text-sm font-semibold cursor-pointer">Connect Workspace</button>
         </div>
     </div>
 
@@ -40,35 +43,53 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "DEINE_SUPABASE_PROJECT_URL";
-        const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY";
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // TRAGE HIER NUR DEINE PROJECT URL EIN (Der Key bleibt leer!)
+        const SUPABASE_URL = "https://bgdosmqrxhkcgerqamku.supabase.co";
+        
+        let supabase = null;
         let currentUser = "";
 
         window.addEventListener('DOMContentLoaded', () => {
             currentUser = localStorage.getItem('peak_chat_user');
-            if (!currentUser || !localStorage.getItem('peak_chat_key')) {
+            const savedKey = localStorage.getItem('peak_chat_anon_key');
+
+            if (!currentUser || !savedKey) {
+                // Wenn nichts gespeichert ist -> Setup zeigen
                 document.getElementById('setup-screen').classList.remove('hidden');
-            } else { initChat(); }
+            } else { 
+                // Wenn Daten da sind -> Direkt einloggen
+                initSupabase(savedKey);
+            }
         });
 
         function saveSetup() {
             const user = document.getElementById('setup-username').value.trim();
             const key = document.getElementById('setup-key').value.trim();
+            
             if (user && key) {
                 localStorage.setItem('peak_chat_user', user);
-                localStorage.setItem('peak_chat_key', key);
+                localStorage.setItem('peak_chat_anon_key', key);
                 currentUser = user;
                 document.getElementById('setup-screen').classList.add('hidden');
-                initChat();
+                initSupabase(key);
             }
         }
 
-        function initChat() {
-            loadHistory();
-            supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, 
-                payload => { renderMessage(payload.new); }
-            ).subscribe();
+        function initSupabase(anonKey) {
+            try {
+                // Supabase wird erst JETZT dynamisch mit dem eingegebenen Key initialisiert
+                supabase = Supabase.createClient(SUPABASE_URL, anonKey);
+                
+                // Chat starten
+                loadHistory();
+                supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, 
+                    payload => { renderMessage(payload.new); }
+                ).subscribe();
+            } catch (err) {
+                alert("Connection failed. Check your Anon Key!");
+                localStorage.clear();
+                window.location.reload();
+            }
         }
 
         async function loadHistory() {
