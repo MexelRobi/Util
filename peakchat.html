@@ -78,15 +78,6 @@
       white-space: nowrap;
     }
 
-    .panic-hint {
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
     .connection {
       display: flex;
       align-items: center;
@@ -227,18 +218,16 @@
       transform-origin: bottom;
     }
 
-    /* HIER EINFÜGEN: Damit Links blau und anklickbar aussehen */
     .message a {
       color: #007bff;
       text-decoration: underline;
       cursor: pointer;
       word-break: break-all;
     }
+
     .message a:hover {
       color: #0056b3;
     }
-
-
 
     @keyframes message-in {
       from {
@@ -338,6 +327,39 @@
       border-color: rgba(0,168,132,.55);
       background: #19272e;
       box-shadow: 0 0 0 3px rgba(0,168,132,.08);
+    }
+
+    /* Panic button */
+
+    .panic-button {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 9px;
+      background: #d92d3a;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      transition: background .18s, transform .18s, box-shadow .18s;
+    }
+
+    .panic-button:hover {
+      background: #f04452;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 12px rgba(217,45,58,.25);
+    }
+
+    .panic-button:active {
+      transform: scale(.94);
+    }
+
+    .panic-button:disabled {
+      opacity: .55;
+      cursor: wait;
     }
 
     #message-input {
@@ -528,11 +550,6 @@
         gap: 8px;
       }
 
-      .panic-hint {
-        max-width: 190px;
-        font-size: 9px;
-      }
-
       .chat-head {
         padding: 0 15px;
       }
@@ -578,7 +595,6 @@
     <header>
       <div class="brand">
         <div class="brand-name">PeakChat</div>
-        <div class="panic-hint">//panic/ · Locks the chat until the message is deleted</div>
       </div>
 
       <div class="connection">
@@ -601,6 +617,16 @@
 
         <div class="composer">
           <div class="input-wrap">
+
+            <button
+              id="panic-button"
+              class="panic-button"
+              type="button"
+              onclick="sendPanicMessage()"
+              aria-label="Lock PeakChat"
+              title="Lock PeakChat"
+            >PANIC</button>
+
             <input
               id="message-input"
               maxlength="2000"
@@ -614,6 +640,7 @@
               onclick="sendMessage()"
               aria-label="Send message"
             >Send</button>
+
           </div>
         </div>
       </section>
@@ -662,17 +689,20 @@
     let channel = null;
     let toastTimer = null;
     let lastRenderedDate = null;
+    let panicLocked = false;
 
     const seen = new Set();
     const $ = id => document.getElementById(id);
-    let panicLocked = false;
 
     // Completely blank this browser when a panic message is found.
     function triggerPanicLock() {
       if (panicLocked) return;
+
       panicLocked = true;
+
       document.documentElement.innerHTML = "";
-      document.documentElement.style.cssText = "background:#fff!important;min-height:100%;";
+      document.documentElement.style.cssText =
+        "background:#fff!important;min-height:100%;";
     }
 
     // Check the database before displaying chat content.
@@ -686,6 +716,7 @@
         .limit(1);
 
       if (error) throw error;
+
       return Array.isArray(data) && data.length > 0;
     }
 
@@ -730,15 +761,18 @@
         $("connect-button").textContent = "Connect";
       }
     }
-      
+
     function makeLinksClickable(text) {
       const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+
       return text.replace(urlRegex, function(url) {
-        const hyperlink = url.startsWith('http') ? url : 'https://' + url;
+        const hyperlink = url.startsWith('http')
+          ? url
+          : 'https://' + url;
+
         return `<a href="${hyperlink}" target="_blank" rel="noopener noreferrer">${url}</a>`;
       });
     }
-
 
     async function initSupabase(key) {
       setConnection(false, "Connecting");
@@ -795,10 +829,12 @@
             },
             payload => {
               const incomingText = String(payload?.new?.text ?? "");
+
               if (incomingText.includes("//panic/")) {
                 triggerPanicLock();
                 return;
               }
+
               renderMessage(payload.new);
             }
           )
@@ -813,12 +849,15 @@
               } catch (err) {
                 console.error("[PeakChat panic check]", err);
               }
+
               setConnection(true, "Online");
+
             } else if (
               status === "CHANNEL_ERROR" ||
               status === "TIMED_OUT"
             ) {
               setConnection(false, "Connection error");
+
             } else if (status === "CLOSED") {
               setConnection(false, "Offline");
             }
@@ -828,10 +867,14 @@
 
       } catch (err) {
         console.error("[PeakChat]", err);
+
         db = null;
+
         setConnection(false, "Connection failed");
         showToast(err.message || "Could not connect to Supabase.");
+
         $("setup-screen").classList.remove("hidden");
+
         return false;
       }
     }
@@ -853,16 +896,49 @@
       (data || []).forEach(renderMessage);
     }
 
+    // Panic button: send the command as the currently logged-in user.
+    async function sendPanicMessage() {
+      const button = $("panic-button");
+
+      if (!db) {
+        return showToast("Not connected to Supabase yet.");
+      }
+
+      if (panicLocked || button.disabled) return;
+
+      button.disabled = true;
+
+      try {
+        const { error } = await db
+          .from("messages")
+          .insert([
+            {
+              user: currentUser,
+              text: "//panic/"
+            }
+          ]);
+
+        if (error) throw error;
+
+        // Lock this client immediately.
+        // Other clients lock through Supabase Realtime.
+        triggerPanicLock();
+
+      } catch (err) {
+        console.error("[PeakChat panic button]", err);
+
+        showToast(err.message || "Could not lock PeakChat.");
+
+        button.disabled = false;
+      }
+    }
+
     async function sendMessage() {
       const input = $("message-input");
       const text = input.value.trim();
       const button = $("send-button");
 
       if (!text) return;
-
-      if (text.includes("//panic/")) {
-        if (!db) return showToast("Not connected to Supabase yet.");
-      }
 
       if (!db) {
         return showToast("Not connected to Supabase yet.");
@@ -873,14 +949,19 @@
       try {
         const { error } = await db
           .from("messages")
-          .insert([{ user: currentUser, text }]);
+          .insert([
+            {
+              user: currentUser,
+              text
+            }
+          ]);
 
         if (error) throw error;
 
         input.value = "";
         input.focus();
 
-        // Lock immediately for the sender as well; other clients lock via realtime.
+        // Also lock when someone manually sends the panic command.
         if (text.includes("//panic/")) {
           triggerPanicLock();
           return;
@@ -888,6 +969,7 @@
 
       } catch (err) {
         console.error("[PeakChat send]", err);
+
         showToast(err.message || "Message could not be sent.");
 
       } finally {
@@ -940,6 +1022,7 @@
     function renderMessage(msg) {
       if (!msg || panicLocked) return;
 
+      // Detect panic commands in every incoming message.
       if (String(msg.text ?? "").includes("//panic/")) {
         triggerPanicLock();
         return;
@@ -949,9 +1032,11 @@
         msg.id ?? [msg.user, msg.created_at, msg.text].join("|");
 
       if (seen.has(identity)) return;
+
       seen.add(identity);
 
       const container = $("message-container");
+
       $("welcome")?.remove();
 
       const date = new Date(msg.created_at);
@@ -966,9 +1051,11 @@
       // Insert a date separator when the day changes.
       if (dateKey !== lastRenderedDate) {
         const separator = document.createElement("div");
+
         separator.className = "date-separator";
 
         const label = document.createElement("span");
+
         label.textContent = getDateLabel(date);
 
         separator.appendChild(label);
@@ -984,30 +1071,36 @@
         (String(msg.user || "") === currentUser ? " outgoing" : "");
 
       const content = document.createElement("div");
+
       content.className = "message-content";
 
       const meta = document.createElement("div");
+
       meta.className = "meta";
 
       const author = document.createElement("span");
+
       author.className = "author";
       author.textContent = msg.user || "Unknown";
 
       const time = document.createElement("span");
+
       time.className = "time";
+
       time.textContent = date.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit"
       });
 
       const body = document.createElement("div");
+
       body.className = "message-text";
-      //body.textContent = msg.text ?? "";
       body.innerHTML = makeLinksClickable(msg.text ?? "");
 
       meta.append(author, time);
       content.append(meta, body);
       row.append(content);
+
       container.append(row);
 
       container.scrollTop = container.scrollHeight;
