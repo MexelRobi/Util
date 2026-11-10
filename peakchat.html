@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,10 +64,27 @@
       box-shadow: 0 2px 12px rgba(0,0,0,.08);
     }
 
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
     .brand-name {
       font-size: 15px;
       font-weight: 650;
       letter-spacing: -.04em;
+      white-space: nowrap;
+    }
+
+    .panic-hint {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .connection {
@@ -508,6 +524,15 @@
         padding: 0 15px;
       }
 
+      .brand {
+        gap: 8px;
+      }
+
+      .panic-hint {
+        max-width: 190px;
+        font-size: 9px;
+      }
+
       .chat-head {
         padding: 0 15px;
       }
@@ -551,7 +576,10 @@
 <body>
   <div class="app">
     <header>
-      <div class="brand-name">PeakChat</div>
+      <div class="brand">
+        <div class="brand-name">PeakChat</div>
+        <div class="panic-hint">//panic/ · Locks the chat until the message is deleted</div>
+      </div>
 
       <div class="connection">
         <span id="status-dot" class="dot"></span>
@@ -637,6 +665,29 @@
 
     const seen = new Set();
     const $ = id => document.getElementById(id);
+    let panicLocked = false;
+
+    // Completely blank this browser when a panic message is found.
+    function triggerPanicLock() {
+      if (panicLocked) return;
+      panicLocked = true;
+      document.documentElement.innerHTML = "";
+      document.documentElement.style.cssText = "background:#fff!important;min-height:100%;";
+    }
+
+    // Check the database before displaying chat content.
+    async function hasPanicMessage() {
+      if (!db) return false;
+
+      const { data, error } = await db
+        .from("messages")
+        .select("id")
+        .ilike("text", "%//panic/%")
+        .limit(1);
+
+      if (error) throw error;
+      return Array.isArray(data) && data.length > 0;
+    }
 
     window.addEventListener("DOMContentLoaded", () => {
       currentUser = localStorage.getItem("peak_chat_user") || "";
@@ -721,6 +772,12 @@
 
         if (check.error) throw check.error;
 
+        // A panic command already in the database blocks this page on startup.
+        if (await hasPanicMessage()) {
+          triggerPanicLock();
+          return true;
+        }
+
         await loadHistory();
 
         if (channel) {
@@ -736,10 +793,26 @@
               schema: "public",
               table: "messages"
             },
-            payload => renderMessage(payload.new)
+            payload => {
+              const incomingText = String(payload?.new?.text ?? "");
+              if (incomingText.includes("//panic/")) {
+                triggerPanicLock();
+                return;
+              }
+              renderMessage(payload.new);
+            }
           )
-          .subscribe(status => {
+          .subscribe(async status => {
             if (status === "SUBSCRIBED") {
+              // Recheck after subscribing to close the startup race window.
+              try {
+                if (await hasPanicMessage()) {
+                  triggerPanicLock();
+                  return;
+                }
+              } catch (err) {
+                console.error("[PeakChat panic check]", err);
+              }
               setConnection(true, "Online");
             } else if (
               status === "CHANNEL_ERROR" ||
@@ -787,6 +860,10 @@
 
       if (!text) return;
 
+      if (text.includes("//panic/")) {
+        if (!db) return showToast("Not connected to Supabase yet.");
+      }
+
       if (!db) {
         return showToast("Not connected to Supabase yet.");
       }
@@ -802,6 +879,12 @@
 
         input.value = "";
         input.focus();
+
+        // Lock immediately for the sender as well; other clients lock via realtime.
+        if (text.includes("//panic/")) {
+          triggerPanicLock();
+          return;
+        }
 
       } catch (err) {
         console.error("[PeakChat send]", err);
@@ -855,7 +938,12 @@
     }
 
     function renderMessage(msg) {
-      if (!msg) return;
+      if (!msg || panicLocked) return;
+
+      if (String(msg.text ?? "").includes("//panic/")) {
+        triggerPanicLock();
+        return;
+      }
 
       const identity =
         msg.id ?? [msg.user, msg.created_at, msg.text].join("|");
