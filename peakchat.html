@@ -332,9 +332,9 @@
     /* Panic button */
 
     .panic-button {
-      width: 36px;
+      width: 52px;
       height: 36px;
-      flex: 0 0 36px;
+      flex: 0 0 52px;
       display: grid;
       place-items: center;
       border: 0;
@@ -538,6 +538,13 @@
       transform: translateY(0);
     }
 
+
+    /* Other Components */
+
+    .spacer {
+      flex: 1;
+    }
+
     /* Mobile */
 
     @media (max-width: 720px) {
@@ -627,6 +634,8 @@
               title="Lock PeakChat"
             >PANIC</button>
 
+            <div class="spacer"></div>
+            
             <input
               id="message-input"
               maxlength="2000"
