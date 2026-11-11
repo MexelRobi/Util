@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,12 +53,17 @@
       flex-direction: column;
     }
 
+    /* Header */
+
     header {
+      position: relative;
+      z-index: 10;
       height: 60px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 15px;
       padding: 0 24px;
       background: var(--panel);
       border-bottom: 1px solid var(--line);
@@ -69,6 +75,7 @@
       align-items: center;
       gap: 14px;
       min-width: 0;
+      flex-shrink: 0;
     }
 
     .brand-name {
@@ -82,6 +89,7 @@
       display: flex;
       align-items: center;
       gap: 9px;
+      flex-shrink: 0;
       color: var(--muted);
       font-size: 11px;
       font-weight: 500;
@@ -100,6 +108,93 @@
       background: var(--green);
       box-shadow: 0 0 0 3px rgba(0,168,132,.12);
     }
+
+    /* Pinned messages overlay */
+
+    .pinned-bar {
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      transform: translateX(-50%);
+
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      width: min(65%, 750px);
+      max-width: 750px;
+      min-height: 0;
+
+      padding: 7px 10px;
+
+      overflow-x: auto;
+      overflow-y: hidden;
+
+      background: #152128;
+      border: 1px solid var(--line);
+      border-top: 0;
+      border-radius: 0 0 10px 10px;
+
+      scrollbar-width: thin;
+      scrollbar-color: #34434b transparent;
+
+      box-shadow: 0 8px 20px rgba(0,0,0,.16);
+    }
+
+    .pinned-bar:empty {
+      display: none;
+    }
+
+    .pinned-label {
+      flex-shrink: 0;
+      padding-right: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .pinned-item {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      max-width: 250px;
+      padding: 6px 10px;
+
+      border: 1px solid rgba(0,168,132,.2);
+      border-radius: 7px;
+
+      background: rgba(0,168,132,.08);
+      color: var(--text);
+
+      text-align: left;
+      transition: background .2s, border-color .2s;
+    }
+
+    .pinned-item:hover {
+      background: rgba(0,168,132,.17);
+      border-color: rgba(0,168,132,.5);
+    }
+
+    .pinned-icon {
+      color: var(--green);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .pinned-text {
+      min-width: 0;
+      font-size: 10px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Workspace */
 
     .workspace {
       flex: 1;
@@ -194,7 +289,6 @@
       color: #aebac1;
       font-size: 10px;
       font-weight: 600;
-      letter-spacing: .01em;
       white-space: nowrap;
     }
 
@@ -219,14 +313,14 @@
     }
 
     .message a {
-      color: #007bff;
+      color: #53bdeb;
       text-decoration: underline;
       cursor: pointer;
       word-break: break-all;
     }
 
     .message a:hover {
-      color: #0056b3;
+      color: #8bd7fa;
     }
 
     @keyframes message-in {
@@ -276,7 +370,7 @@
       line-height: 1.7;
       overflow-wrap: anywhere;
       white-space: pre-wrap;
-      transition: border-color .2s, background .2s;
+      transition: border-color .2s, background .2s, box-shadow .2s;
     }
 
     .message.outgoing {
@@ -294,14 +388,18 @@
       justify-content: flex-end;
     }
 
-    .message.outgoing .author,
-    .message.outgoing .avatar {
+    .message.outgoing .author {
       display: none;
     }
 
     .message.outgoing .message-text {
       background: #075e4e;
       border-radius: 12px 3px 12px 12px;
+    }
+
+    .message.pinned-highlight .message-text {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(0,168,132,.14);
     }
 
     /* Composer */
@@ -312,13 +410,19 @@
       border-top: 1px solid var(--line);
     }
 
-    .input-wrap {
+    .hstack {
       display: flex;
-      flex-direction: row;
       align-items: center;
       gap: 10px;
       width: 100%;
-      
+    }
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
       padding: 5px 7px;
       background: #172229;
       border: 1px solid var(--line);
@@ -332,7 +436,7 @@
       box-shadow: 0 0 0 3px rgba(0,168,132,.08);
     }
 
-    /* Panic button */
+    /* Panic */
 
     .panic-button {
       width: 52px;
@@ -541,31 +645,30 @@
       transform: translateY(0);
     }
 
-
-    /* Other Components */
-
-    .spacer {
-      flex: 1;
-    }
-
-    .hstack {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-
     /* Mobile */
 
     @media (max-width: 720px) {
       header {
         height: 54px;
         padding: 0 15px;
+        gap: 8px;
       }
 
       .brand {
         gap: 8px;
+      }
+
+      .brand-name {
+        font-size: 14px;
+      }
+
+      .pinned-bar {
+        width: 75%;
+        max-width: none;
+      }
+
+      .pinned-item {
+        max-width: 180px;
       }
 
       .chat-head {
@@ -586,14 +689,13 @@
 
       .connection {
         font-size: 10px;
+        gap: 7px;
       }
 
       .setup {
         padding: 22px;
       }
     }
-
-    /* Accessibility */
 
     @media (prefers-reduced-motion: reduce) {
       *,
@@ -614,6 +716,9 @@
       <div class="brand">
         <div class="brand-name">PeakChat</div>
       </div>
+
+      <!-- Pinned messages -->
+      <div id="pinned-bar" class="pinned-bar"></div>
 
       <div class="connection">
         <span id="status-dot" class="dot"></span>
@@ -643,6 +748,7 @@
               aria-label="Lock PeakChat"
               title="Lock PeakChat"
             >PANIC</button>
+
             <div class="input-wrap">
               <input
                 id="message-input"
@@ -650,6 +756,7 @@
                 placeholder="Message"
                 autocomplete="off"
               >
+
               <button
                 id="send-button"
                 class="send"
@@ -658,10 +765,12 @@
               >Send</button>
             </div>
           </div>
+        </div>
       </section>
     </main>
   </div>
 
+  <!-- Setup -->
   <div id="setup-screen" class="modal hidden">
     <div class="setup">
       <h2>PeakChat</h2>
@@ -707,9 +816,12 @@
     let panicLocked = false;
 
     const seen = new Set();
+    const pinnedMessages = new Map();
+
     const $ = id => document.getElementById(id);
 
-    // Completely blank this browser when a panic message is found.
+    /* Panic lock */
+
     function triggerPanicLock() {
       if (panicLocked) return;
 
@@ -720,7 +832,6 @@
         "background:#fff!important;min-height:100%;";
     }
 
-    // Check the database before displaying chat content.
     async function hasPanicMessage() {
       if (!db) return false;
 
@@ -734,6 +845,8 @@
 
       return Array.isArray(data) && data.length > 0;
     }
+
+    /* Startup */
 
     window.addEventListener("DOMContentLoaded", () => {
       currentUser = localStorage.getItem("peak_chat_user") || "";
@@ -777,17 +890,7 @@
       }
     }
 
-    function makeLinksClickable(text) {
-      const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-
-      return text.replace(urlRegex, function(url) {
-        const hyperlink = url.startsWith('http')
-          ? url
-          : 'https://' + url;
-
-        return `<a href="${hyperlink}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-      });
-    }
+    /* Supabase */
 
     async function initSupabase(key) {
       setConnection(false, "Connecting");
@@ -821,13 +924,14 @@
 
         if (check.error) throw check.error;
 
-        // A panic command already in the database blocks this page on startup.
         if (await hasPanicMessage()) {
           triggerPanicLock();
           return true;
         }
 
+        // Load chat history and pinned messages.
         await loadHistory();
+        await loadPinnedMessages();
 
         if (channel) {
           await db.removeChannel(channel);
@@ -838,24 +942,47 @@
           .on(
             "postgres_changes",
             {
-              event: "INSERT",
+              event: "*",
               schema: "public",
               table: "messages"
             },
             payload => {
-              const incomingText = String(payload?.new?.text ?? "");
+              const msg = payload.new;
 
-              if (incomingText.includes("//panic/")) {
+              if (
+                payload.eventType !== "DELETE" &&
+                String(msg?.text ?? "").includes("//panic/")
+              ) {
                 triggerPanicLock();
                 return;
               }
 
-              renderMessage(payload.new);
+              if (payload.eventType === "INSERT") {
+                renderMessage(msg);
+                updatePinnedMessage(msg);
+              }
+
+              if (payload.eventType === "UPDATE") {
+                updatePinnedMessage(msg);
+              }
+
+              if (payload.eventType === "DELETE") {
+                const oldId = payload.old?.id;
+
+                pinnedMessages.delete(oldId);
+                renderPinnedMessages();
+
+                const element = document.getElementById(
+                  `message-${oldId}`
+                );
+
+                element?.remove();
+                seen.delete(oldId);
+              }
             }
           )
           .subscribe(async status => {
             if (status === "SUBSCRIBED") {
-              // Recheck after subscribing to close the startup race window.
               try {
                 if (await hasPanicMessage()) {
                   triggerPanicLock();
@@ -899,6 +1026,8 @@
       $("connection-text").textContent = label;
     }
 
+    /* History */
+
     async function loadHistory() {
       const { data, error } = await db
         .from("messages")
@@ -911,7 +1040,234 @@
       (data || []).forEach(renderMessage);
     }
 
-    // Panic button: send the command as the currently logged-in user.
+    /* Pinned messages */
+
+    async function loadPinnedMessages() {
+      const { data, error } = await db
+        .from("messages")
+        .select("*")
+        .eq("pinned", true)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      pinnedMessages.clear();
+
+      (data || []).forEach(msg => {
+        pinnedMessages.set(msg.id, msg);
+      });
+
+      renderPinnedMessages();
+    }
+
+    function updatePinnedMessage(msg) {
+      if (!msg || !msg.id) return;
+
+      if (msg.pinned === true) {
+        pinnedMessages.set(msg.id, msg);
+      } else {
+        pinnedMessages.delete(msg.id);
+      }
+
+      renderPinnedMessages();
+    }
+
+    function renderPinnedMessages() {
+      const bar = $("pinned-bar");
+
+      bar.replaceChildren();
+
+      if (pinnedMessages.size === 0) return;
+
+      const label = document.createElement("span");
+      label.className = "pinned-label";
+      label.textContent = "PINNED";
+
+      bar.appendChild(label);
+
+      for (const msg of pinnedMessages.values()) {
+        const item = document.createElement("button");
+
+        item.type = "button";
+        item.className = "pinned-item";
+        item.title = "Jump to pinned message";
+
+        const icon = document.createElement("span");
+        icon.className = "pinned-icon";
+        icon.textContent = "◆";
+
+        const text = document.createElement("span");
+        text.className = "pinned-text";
+        text.textContent =
+          `${msg.user || "Unknown"}: ${msg.text || ""}`;
+
+        item.append(icon, text);
+
+        item.addEventListener("click", () => {
+          jumpToMessage(msg.id);
+        });
+
+        bar.appendChild(item);
+      }
+    }
+
+    async function jumpToMessage(id) {
+      let element = document.getElementById(`message-${id}`);
+
+      // Fetch the original message if it is outside the loaded history.
+      if (!element) {
+        const { data, error } = await db
+          .from("messages")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (error || !data) {
+          showToast("Could not load pinned message.");
+          return;
+        }
+
+        renderMessage(data);
+        element = document.getElementById(`message-${id}`);
+      }
+
+      if (!element) return;
+
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      element.classList.add("pinned-highlight");
+
+      setTimeout(() => {
+        element.classList.remove("pinned-highlight");
+      }, 2000);
+    }
+
+    /* Message links */
+
+    function renderMessageText(element, text) {
+      const regex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+      let lastIndex = 0;
+
+      for (const match of text.matchAll(regex)) {
+        const url = match[0];
+        const index = match.index;
+
+        element.appendChild(
+          document.createTextNode(text.slice(lastIndex, index))
+        );
+
+        const link = document.createElement("a");
+
+        const hyperlink = url.startsWith("http")
+          ? url
+          : "https://" + url;
+
+        link.href = hyperlink;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = url;
+
+        element.appendChild(link);
+
+        lastIndex = index + url.length;
+      }
+
+      element.appendChild(
+        document.createTextNode(text.slice(lastIndex))
+      );
+    }
+
+    /* Render messages */
+
+    function renderMessage(msg) {
+      if (!msg || panicLocked) return;
+
+      if (String(msg.text ?? "").includes("//panic/")) {
+        triggerPanicLock();
+        return;
+      }
+
+      const identity =
+        msg.id ?? [msg.user, msg.created_at, msg.text].join("|");
+
+      if (seen.has(identity)) return;
+
+      const date = new Date(msg.created_at);
+
+      if (Number.isNaN(date.getTime())) {
+        console.warn("[PeakChat] Invalid message date:", msg.created_at);
+        return;
+      }
+
+      seen.add(identity);
+
+      const container = $("message-container");
+
+      $("welcome")?.remove();
+
+      const dateKey = getDateKey(date);
+
+      if (dateKey !== lastRenderedDate) {
+        const separator = document.createElement("div");
+
+        separator.className = "date-separator";
+
+        const label = document.createElement("span");
+        label.textContent = getDateLabel(date);
+
+        separator.appendChild(label);
+        container.appendChild(separator);
+
+        lastRenderedDate = dateKey;
+      }
+
+      const row = document.createElement("div");
+
+      if (msg.id) {
+        row.id = `message-${msg.id}`;
+      }
+
+      row.className =
+        "message" +
+        (String(msg.user || "") === currentUser ? " outgoing" : "");
+
+      const content = document.createElement("div");
+      content.className = "message-content";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const author = document.createElement("span");
+      author.className = "author";
+      author.textContent = msg.user || "Unknown";
+
+      const time = document.createElement("span");
+      time.className = "time";
+
+      time.textContent = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      const body = document.createElement("div");
+      body.className = "message-text";
+
+      renderMessageText(body, String(msg.text ?? ""));
+
+      meta.append(author, time);
+      content.append(meta, body);
+      row.append(content);
+
+      container.append(row);
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    /* Send messages */
+
     async function sendPanicMessage() {
       const button = $("panic-button");
 
@@ -935,8 +1291,6 @@
 
         if (error) throw error;
 
-        // Lock this client immediately.
-        // Other clients lock through Supabase Realtime.
         triggerPanicLock();
 
       } catch (err) {
@@ -976,7 +1330,6 @@
         input.value = "";
         input.focus();
 
-        // Also lock when someone manually sends the panic command.
         if (text.includes("//panic/")) {
           triggerPanicLock();
           return;
@@ -1034,92 +1387,7 @@
       }).format(date);
     }
 
-    function renderMessage(msg) {
-      if (!msg || panicLocked) return;
-
-      // Detect panic commands in every incoming message.
-      if (String(msg.text ?? "").includes("//panic/")) {
-        triggerPanicLock();
-        return;
-      }
-
-      const identity =
-        msg.id ?? [msg.user, msg.created_at, msg.text].join("|");
-
-      if (seen.has(identity)) return;
-
-      seen.add(identity);
-
-      const container = $("message-container");
-
-      $("welcome")?.remove();
-
-      const date = new Date(msg.created_at);
-
-      if (Number.isNaN(date.getTime())) {
-        console.warn("[PeakChat] Invalid message date:", msg.created_at);
-        return;
-      }
-
-      const dateKey = getDateKey(date);
-
-      // Insert a date separator when the day changes.
-      if (dateKey !== lastRenderedDate) {
-        const separator = document.createElement("div");
-
-        separator.className = "date-separator";
-
-        const label = document.createElement("span");
-
-        label.textContent = getDateLabel(date);
-
-        separator.appendChild(label);
-        container.appendChild(separator);
-
-        lastRenderedDate = dateKey;
-      }
-
-      const row = document.createElement("div");
-
-      row.className =
-        "message" +
-        (String(msg.user || "") === currentUser ? " outgoing" : "");
-
-      const content = document.createElement("div");
-
-      content.className = "message-content";
-
-      const meta = document.createElement("div");
-
-      meta.className = "meta";
-
-      const author = document.createElement("span");
-
-      author.className = "author";
-      author.textContent = msg.user || "Unknown";
-
-      const time = document.createElement("span");
-
-      time.className = "time";
-
-      time.textContent = date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      const body = document.createElement("div");
-
-      body.className = "message-text";
-      body.innerHTML = makeLinksClickable(msg.text ?? "");
-
-      meta.append(author, time);
-      content.append(meta, body);
-      row.append(content);
-
-      container.append(row);
-
-      container.scrollTop = container.scrollHeight;
-    }
+    /* Toast */
 
     function showToast(message) {
       const toast = $("toast");
@@ -1134,6 +1402,8 @@
         3500
       );
     }
+
+    /* Keyboard */
 
     $("message-input").addEventListener("keydown", event => {
       if (event.key === "Enter" && !event.shiftKey) {
