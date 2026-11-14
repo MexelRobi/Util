@@ -65,11 +65,10 @@
 
   <script>
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-    const API_URL = "https://script.google.com/macros/s/AKfycbyRQ1AwSxAqX4Cig3FCLSKg4g8-p6_bVoS6LRYOG6KZruYumZQ_oM14fwsj-kc_f1YI/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxvZ-HnN5Hj5pYLixusujenmia7kIkgwjB-zKGLWW-ROrGhDPTYhfEQTm3dQV121t7c/exec";
 
     let savedPassword = "";
 
-    // Helper function to talk to the Apps Script Backend without CORS preflight issues
     async function callBackend(payload) {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -98,14 +97,6 @@
         if (res.success) {
           savedPassword = pw;
           errorDiv.innerText = "";
-
-          // Execute custom JS from peakNET_INJECT immediately upon login if present
-          if (res.injectJs) {
-            const scriptEl = document.createElement('script');
-            scriptEl.textContent = res.injectJs;
-            document.body.appendChild(scriptEl);
-          }
-
           document.getElementById('login-box').classList.add('hidden');
           document.getElementById('keyword-box').classList.remove('hidden');
           document.getElementById('keyword-input').focus();
@@ -138,7 +129,6 @@
         btn.disabled = false;
 
         if (res.success && res.html) {
-          // Completely replaces the page with the HTML + injected JS from Google Sheets
           document.open();
           document.write(res.html);
           document.close();
