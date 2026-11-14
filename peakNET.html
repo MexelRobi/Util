@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>peakNET</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+    }
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 300px;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 98%;
+      padding: 10px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background-color: #1557b0; }
+    button:disabled { background-color: #9bbcf0; cursor: not-allowed; }
+    .hidden { display: none; }
+    .error { color: red; font-size: 14px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. PASSWORD SECTION -->
+  <div id="login-box" class="box">
+    <h2>Login</h2>
+    <input type="password" id="password-input" placeholder="Enter password" onkeypress="if(event.key==='Enter') verifyPassword()">
+    <button id="login-btn" onclick="verifyPassword()">Continue</button>
+    <div id="login-error" class="error"></div>
+  </div>
+
+  <!-- 2. KEYWORD SECTION -->
+  <div id="keyword-box" class="box hidden">
+    <h2>Enter Keyword</h2>
+    <input type="text" id="keyword-input" placeholder="Keyword..." onkeypress="if(event.key==='Enter') fetchPage()">
+    <button id="ok-btn" onclick="fetchPage()">OK</button>
+    <div id="keyword-error" class="error"></div>
+  </div>
+
+  <script>
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+    const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+
+    let savedPassword = "";
+
+    // Helper function to talk to the Apps Script Backend without CORS preflight issues
+    async function callBackend(payload) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    }
+
+    async function verifyPassword() {
+      const pw = document.getElementById('password-input').value;
+      const errorDiv = document.getElementById('login-error');
+      const btn = document.getElementById('login-btn');
+
+      if (!pw) return;
+
+      errorDiv.innerText = "Checking...";
+      btn.disabled = true;
+
+      try {
+        const res = await callBackend({ action: "login", password: pw });
+        btn.disabled = false;
+
+        if (res.success) {
+          savedPassword = pw;
+          errorDiv.innerText = "";
+
+          // Execute custom JS from peakNET_INJECT immediately upon login if present
+          if (res.injectJs) {
+            const scriptEl = document.createElement('script');
+            scriptEl.textContent = res.injectJs;
+            document.body.appendChild(scriptEl);
+          }
+
+          document.getElementById('login-box').classList.add('hidden');
+          document.getElementById('keyword-box').classList.remove('hidden');
+          document.getElementById('keyword-input').focus();
+        } else {
+          errorDiv.innerText = res.error || "Incorrect password!";
+        }
+      } catch (err) {
+        btn.disabled = false;
+        errorDiv.innerText = "Connection error.";
+      }
+    }
+
+    async function fetchPage() {
+      const kw = document.getElementById('keyword-input').value;
+      const errorDiv = document.getElementById('keyword-error');
+      const btn = document.getElementById('ok-btn');
+
+      if (!kw.trim()) return;
+
+      errorDiv.innerText = "Loading page...";
+      btn.disabled = true;
+
+      try {
+        const res = await callBackend({ 
+          action: "getPage", 
+          password: savedPassword, 
+          keyword: kw 
+        });
+
+        btn.disabled = false;
+
+        if (res.success && res.html) {
+          // Completely replaces the page with the HTML + injected JS from Google Sheets
+          document.open();
+          document.write(res.html);
+          document.close();
+        } else {
+          errorDiv.innerText = res.error || "Keyword not found.";
+        }
+      } catch (err) {
+        btn.disabled = false;
+        errorDiv.innerText = "Error loading page.";
+      }
+    }
+  </script>
+
+</body>
+</html>
