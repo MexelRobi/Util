@@ -129,9 +129,19 @@
         btn.disabled = false;
 
         if (res.success && res.html) {
-          document.open();
-          document.write(res.html);
-          document.close();
+          const blob = new Blob([res.html], { type: "text/html" });
+          const blobUrl = URL.createObjectURL(blob);
+
+          document.body.innerHTML = "";
+          document.body.style.margin = "0";
+          document.body.style.overflow = "hidden";
+
+          const iframe = document.createElement("iframe");
+          iframe.src = blobUrl;
+          iframe.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; border:none;";
+          iframe.allow = "autoplay; fullscreen; gamepad; keyboard-map *";
+          document.body.appendChild(iframe);
+          iframe.focus();
         } else {
           errorDiv.innerText = res.error || "Keyword not found.";
         }
