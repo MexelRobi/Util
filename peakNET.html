@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,9 +41,16 @@
       font-size: 16px;
     }
     button:hover { background-color: #1557b0; }
-    button:disabled { background-color: #9bbcf0; cursor: not-allowed; }
+    button:disabled {
+      background-color: #9bbcf0;
+      cursor: not-allowed;
+    }
     .hidden { display: none; }
-    .error { color: red; font-size: 14px; margin-top: 10px; }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -50,7 +58,12 @@
   <!-- 1. PASSWORD SECTION -->
   <div id="login-box" class="box">
     <h2>Login</h2>
-    <input type="password" id="password-input" placeholder="Enter password" onkeypress="if(event.key==='Enter') verifyPassword()">
+    <input
+      type="password"
+      id="password-input"
+      placeholder="Enter password"
+      onkeypress="if(event.key==='Enter') verifyPassword()"
+    >
     <button id="login-btn" onclick="verifyPassword()">Continue</button>
     <div id="login-error" class="error"></div>
   </div>
@@ -58,16 +71,22 @@
   <!-- 2. KEYWORD SECTION -->
   <div id="keyword-box" class="box hidden">
     <h2>Enter Keyword</h2>
-    <input type="text" id="keyword-input" placeholder="Keyword..." onkeypress="if(event.key==='Enter') fetchPage()">
+    <input
+      type="text"
+      id="keyword-input"
+      placeholder="Keyword..."
+      onkeypress="if(event.key==='Enter') fetchPage()"
+    >
     <button id="ok-btn" onclick="fetchPage()">OK</button>
     <div id="keyword-error" class="error"></div>
   </div>
 
   <script>
-    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-    const API_URL = "https://script.google.com/macros/s/AKfycbyOYk476GHiSRawc22J9DA7GhgedXUbciejmbpZDh0lsWP6EWJmd5gp36Ai4Vnpunpx/exec";
+    // GOOGLE APPS SCRIPT URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbxd3MRtoxTf1H4uCKz4vG5zXNUUeqRgs6EtBOL_NYcidSIzEsDywQN_GvICBkNI9dMQ/exec";
 
-    let savedPassword = "";
+    // RESTORE PASSWORD FROM CURRENT SESSION
+    let savedPassword = sessionStorage.getItem("peakNET_password") || "";
 
     async function callBackend(payload) {
       const response = await fetch(API_URL, {
@@ -77,9 +96,11 @@
         },
         body: JSON.stringify(payload)
       });
+
       return await response.json();
     }
 
+    // VERIFY PASSWORD
     async function verifyPassword() {
       const pw = document.getElementById('password-input').value;
       const errorDiv = document.getElementById('login-error');
@@ -91,24 +112,36 @@
       btn.disabled = true;
 
       try {
-        const res = await callBackend({ action: "login", password: pw });
+        const res = await callBackend({
+          action: "login",
+          password: pw
+        });
+
         btn.disabled = false;
 
         if (res.success) {
           savedPassword = pw;
+
+          // SAVE PASSWORD FOR CURRENT SESSION
+          sessionStorage.setItem("peakNET_password", pw);
+
           errorDiv.innerText = "";
+
           document.getElementById('login-box').classList.add('hidden');
           document.getElementById('keyword-box').classList.remove('hidden');
           document.getElementById('keyword-input').focus();
+
         } else {
           errorDiv.innerText = res.error || "Incorrect password!";
         }
+
       } catch (err) {
         btn.disabled = false;
         errorDiv.innerText = "Connection error.";
       }
     }
 
+    // LOAD PAGE USING KEYWORD
     async function fetchPage() {
       const kw = document.getElementById('keyword-input').value;
       const errorDiv = document.getElementById('keyword-error');
@@ -120,16 +153,19 @@
       btn.disabled = true;
 
       try {
-        const res = await callBackend({ 
-          action: "getPage", 
-          password: savedPassword, 
-          keyword: kw 
+        const res = await callBackend({
+          action: "getPage",
+          password: savedPassword,
+          keyword: kw
         });
 
         btn.disabled = false;
 
         if (res.success && res.html) {
-          const blob = new Blob([res.html], { type: "text/html" });
+          const blob = new Blob([res.html], {
+            type: "text/html"
+          });
+
           const blobUrl = URL.createObjectURL(blob);
 
           document.body.innerHTML = "";
@@ -137,19 +173,35 @@
           document.body.style.overflow = "hidden";
 
           const iframe = document.createElement("iframe");
+
           iframe.src = blobUrl;
-          iframe.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; border:none;";
+          iframe.style.cssText =
+            "position:fixed; top:0; left:0; width:100vw; height:100vh; border:none;";
+
           iframe.allow = "autoplay; fullscreen; gamepad; keyboard-map *";
+
           document.body.appendChild(iframe);
           iframe.focus();
+
         } else {
           errorDiv.innerText = res.error || "Keyword not found.";
         }
+
       } catch (err) {
         btn.disabled = false;
         errorDiv.innerText = "Error loading page.";
       }
     }
+
+    // RESTORE LOGIN AFTER PAGE RELOAD
+    window.addEventListener("DOMContentLoaded", () => {
+      if (savedPassword) {
+        document.getElementById('login-box').classList.add('hidden');
+        document.getElementById('keyword-box').classList.remove('hidden');
+        document.getElementById('keyword-input').focus();
+      }
+    });
+
   </script>
 
 </body>
