@@ -85,7 +85,6 @@
     // GOOGLE APPS SCRIPT URL
     const API_URL = "https://script.google.com/macros/s/AKfycbxd3MRtoxTf1H4uCKz4vG5zXNUUeqRgs6EtBOL_NYcidSIzEsDywQN_GvICBkNI9dMQ/exec";
 
-    // RESTORE PASSWORD FROM CURRENT SESSION
     let savedPassword = sessionStorage.getItem("peakNET_password") || "";
 
     async function callBackend(payload) {
@@ -100,15 +99,21 @@
       return await response.json();
     }
 
-    // VERIFY PASSWORD
-    async function verifyPassword() {
-      const pw = document.getElementById('password-input').value;
-      const errorDiv = document.getElementById('login-error');
-      const btn = document.getElementById('login-btn');
+    function showKeywordScreen() {
+      document.getElementById("login-box").classList.add("hidden");
+      document.getElementById("keyword-box").classList.remove("hidden");
+      document.getElementById("keyword-input").focus();
+    }
 
-      if (!pw) return;
+    // Verify a password typed by the user or supplied in the permalink.
+    async function verifyPassword(passwordFromUrl = null) {
+      const pw = passwordFromUrl ?? document.getElementById("password-input").value;
+      const errorDiv = document.getElementById("login-error");
+      const btn = document.getElementById("login-btn");
 
-      errorDiv.innerText = "Checking...";
+      if (!pw) return false;
+
+      errorDiv.innerText = passwordFromUrl ? "Opening permalink..." : "Checking...";
       btn.disabled = true;
 
       try {
@@ -121,31 +126,26 @@
 
         if (res.success) {
           savedPassword = pw;
-
-          // SAVE PASSWORD FOR CURRENT SESSION
           sessionStorage.setItem("peakNET_password", pw);
-
           errorDiv.innerText = "";
-
-          document.getElementById('login-box').classList.add('hidden');
-          document.getElementById('keyword-box').classList.remove('hidden');
-          document.getElementById('keyword-input').focus();
-
-        } else {
-          errorDiv.innerText = res.error || "Incorrect password!";
+          showKeywordScreen();
+          return true;
         }
 
+        errorDiv.innerText = res.error || "Incorrect password!";
+        return false;
       } catch (err) {
         btn.disabled = false;
         errorDiv.innerText = "Connection error.";
+        return false;
       }
     }
 
-    // LOAD PAGE USING KEYWORD
-    async function fetchPage() {
-      const kw = document.getElementById('keyword-input').value;
-      const errorDiv = document.getElementById('keyword-error');
-      const btn = document.getElementById('ok-btn');
+    // Load a page using a keyword typed by the user or supplied in the permalink.
+    async function fetchPage(keywordFromUrl = null) {
+      const kw = keywordFromUrl ?? document.getElementById("keyword-input").value;
+      const errorDiv = document.getElementById("keyword-error");
+      const btn = document.getElementById("ok-btn");
 
       if (!kw.trim()) return;
 
@@ -156,16 +156,13 @@
         const res = await callBackend({
           action: "getPage",
           password: savedPassword,
-          keyword: kw
+          keyword: kw.trim()
         });
 
         btn.disabled = false;
 
         if (res.success && res.html) {
-          const blob = new Blob([res.html], {
-            type: "text/html"
-          });
-
+          const blob = new Blob([res.html], { type: "text/html" });
           const blobUrl = URL.createObjectURL(blob);
 
           document.body.innerHTML = "";
@@ -173,35 +170,52 @@
           document.body.style.overflow = "hidden";
 
           const iframe = document.createElement("iframe");
-
           iframe.src = blobUrl;
           iframe.style.cssText =
-            "position:fixed; top:0; left:0; width:100vw; height:100vh; border:none;";
-
+            "position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;";
           iframe.allow = "autoplay; fullscreen; gamepad; keyboard-map *";
 
           document.body.appendChild(iframe);
           iframe.focus();
-
         } else {
           errorDiv.innerText = res.error || "Keyword not found.";
         }
-
       } catch (err) {
         btn.disabled = false;
         errorDiv.innerText = "Error loading page.";
       }
     }
 
-    // RESTORE LOGIN AFTER PAGE RELOAD
-    window.addEventListener("DOMContentLoaded", () => {
+    // Permalinks:
+    // https://example.com/peakNET.html#password=YOUR_PASSWORD&keyword=YOUR_KEYWORD
+    // The hash is used instead of query parameters so credentials are not sent
+    // to the web server in the HTTP request.
+    function getPermalinkData() {
+      const hash = window.location.hash.replace(/^#/, "");
+      const params = new URLSearchParams(hash);
+      return {
+        password: params.get("password") || params.get("pw") || "",
+        keyword: params.get("keyword") || params.get("kw") || ""
+      };
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const permalink = getPermalinkData();
+
+      // If both values are present, authenticate and open the requested content.
+      if (permalink.password && permalink.keyword) {
+        const valid = await verifyPassword(permalink.password);
+        if (valid) {
+          await fetchPage(permalink.keyword);
+        }
+        return;
+      }
+
+      // Otherwise restore the current tab's session login as before.
       if (savedPassword) {
-        document.getElementById('login-box').classList.add('hidden');
-        document.getElementById('keyword-box').classList.remove('hidden');
-        document.getElementById('keyword-input').focus();
+        showKeywordScreen();
       }
     });
-
   </script>
 
 </body>
