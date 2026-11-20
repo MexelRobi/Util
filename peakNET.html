@@ -5,16 +5,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>peakNET</title>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       background-color: #f4f4f9;
     }
+
     .box {
       background: white;
       padding: 30px;
@@ -23,6 +29,7 @@
       text-align: center;
       width: 300px;
     }
+
     input {
       width: 90%;
       padding: 10px;
@@ -30,6 +37,7 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+
     button {
       width: 98%;
       padding: 10px;
@@ -40,52 +48,159 @@
       cursor: pointer;
       font-size: 16px;
     }
-    button:hover { background-color: #1557b0; }
+
+    button:hover {
+      background-color: #1557b0;
+    }
+
     button:disabled {
       background-color: #9bbcf0;
       cursor: not-allowed;
     }
-    .hidden { display: none; }
+
+    .hidden {
+      display: none !important;
+    }
+
     .error {
       color: red;
       font-size: 14px;
       margin-top: 10px;
     }
+
+    /* PERMALINK LOADING SCREEN */
+
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #f4f4f9;
+      z-index: 9999;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .loader {
+      width: 38px;
+      height: 38px;
+      border: 3px solid #dce3ed;
+      border-top-color: #1a73e8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-title {
+      margin-top: 22px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #202124;
+      letter-spacing: 0.2px;
+    }
+
+    .loading-status {
+      margin-top: 7px;
+      font-size: 13px;
+      color: #777;
+    }
+
+    .loading-error {
+      margin-top: 20px;
+      color: #d93025;
+      font-size: 13px;
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .retry-button {
+      margin-top: 16px;
+      width: auto;
+      min-width: 110px;
+      padding: 9px 18px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
+
 <body>
 
-  <!-- 1. PASSWORD SECTION -->
+  <!-- PERMALINK LOADING SCREEN -->
+  <div id="loading-screen" class="hidden">
+    <div class="loader" id="loading-spinner"></div>
+
+    <div class="loading-title" id="loading-title">
+      Opening peakNET
+    </div>
+
+    <div class="loading-status" id="loading-status">
+      Authenticating...
+    </div>
+
+    <div id="loading-error" class="loading-error"></div>
+
+    <button
+      id="retry-button"
+      class="retry-button hidden"
+      onclick="location.reload()"
+    >
+      Try again
+    </button>
+  </div>
+
+  <!-- PASSWORD SECTION -->
   <div id="login-box" class="box">
     <h2>Login</h2>
+
     <input
       type="password"
       id="password-input"
       placeholder="Enter password"
       onkeypress="if(event.key==='Enter') verifyPassword()"
     >
-    <button id="login-btn" onclick="verifyPassword()">Continue</button>
+
+    <button id="login-btn" onclick="verifyPassword()">
+      Continue
+    </button>
+
     <div id="login-error" class="error"></div>
   </div>
 
-  <!-- 2. KEYWORD SECTION -->
+  <!-- KEYWORD SECTION -->
   <div id="keyword-box" class="box hidden">
     <h2>Enter Keyword</h2>
+
     <input
       type="text"
       id="keyword-input"
       placeholder="Keyword..."
       onkeypress="if(event.key==='Enter') fetchPage()"
     >
-    <button id="ok-btn" onclick="fetchPage()">OK</button>
+
+    <button id="ok-btn" onclick="fetchPage()">
+      OK
+    </button>
+
     <div id="keyword-error" class="error"></div>
   </div>
 
   <script>
-    // GOOGLE APPS SCRIPT URL
-    const API_URL = "https://script.google.com/macros/s/AKfycbxd3MRtoxTf1H4uCKz4vG5zXNUUeqRgs6EtBOL_NYcidSIzEsDywQN_GvICBkNI9dMQ/exec";
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbxkgvmYPzyWmsR62Ii21RdHr8XlIi-3SwHjIJyBW9t7w4jK8vNmBezSU_hja9jK6rrR/exec";
 
-    let savedPassword = sessionStorage.getItem("peakNET_password") || "";
+    let savedPassword =
+      sessionStorage.getItem("peakNET_password") || "";
 
     async function callBackend(payload) {
       const response = await fetch(API_URL, {
@@ -96,6 +211,10 @@
         body: JSON.stringify(payload)
       });
 
+      if (!response.ok) {
+        throw new Error("Backend request failed");
+      }
+
       return await response.json();
     }
 
@@ -105,15 +224,51 @@
       document.getElementById("keyword-input").focus();
     }
 
-    // Verify a password typed by the user or supplied in the permalink.
+    function showLoginScreen() {
+      document.getElementById("keyword-box").classList.add("hidden");
+      document.getElementById("login-box").classList.remove("hidden");
+    }
+
+    function showLoadingScreen() {
+      document.getElementById("login-box").classList.add("hidden");
+      document.getElementById("keyword-box").classList.add("hidden");
+
+      document.getElementById("loading-screen").classList.remove("hidden");
+    }
+
+    function setLoadingStatus(status) {
+      document.getElementById("loading-status").innerText = status;
+    }
+
+    function showLoadingError(message) {
+      document.getElementById("loading-spinner").classList.add("hidden");
+
+      document.getElementById("loading-title").innerText =
+        "Unable to open page";
+
+      document.getElementById("loading-status").innerText = "";
+
+      document.getElementById("loading-error").innerText = message;
+
+      document.getElementById("retry-button").classList.remove("hidden");
+    }
+
+    // PASSWORD VERIFICATION
+
     async function verifyPassword(passwordFromUrl = null) {
-      const pw = passwordFromUrl ?? document.getElementById("password-input").value;
+      const pw =
+        passwordFromUrl ??
+        document.getElementById("password-input").value;
+
       const errorDiv = document.getElementById("login-error");
       const btn = document.getElementById("login-btn");
 
       if (!pw) return false;
 
-      errorDiv.innerText = passwordFromUrl ? "Opening permalink..." : "Checking...";
+      errorDiv.innerText = passwordFromUrl
+        ? "Opening permalink..."
+        : "Checking...";
+
       btn.disabled = true;
 
       try {
@@ -126,24 +281,52 @@
 
         if (res.success) {
           savedPassword = pw;
-          sessionStorage.setItem("peakNET_password", pw);
+
+          sessionStorage.setItem(
+            "peakNET_password",
+            pw
+          );
+
           errorDiv.innerText = "";
-          showKeywordScreen();
+
+          if (!passwordFromUrl) {
+            showKeywordScreen();
+          }
+
           return true;
         }
 
-        errorDiv.innerText = res.error || "Incorrect password!";
+        if (passwordFromUrl) {
+          showLoadingError(
+            res.error || "Invalid password or access denied."
+          );
+        } else {
+          errorDiv.innerText =
+            res.error || "Incorrect password!";
+        }
+
         return false;
+
       } catch (err) {
         btn.disabled = false;
-        errorDiv.innerText = "Connection error.";
+
+        if (passwordFromUrl) {
+          showLoadingError("Connection error. Please try again.");
+        } else {
+          errorDiv.innerText = "Connection error.";
+        }
+
         return false;
       }
     }
 
-    // Load a page using a keyword typed by the user or supplied in the permalink.
+    // FETCH PAGE
+
     async function fetchPage(keywordFromUrl = null) {
-      const kw = keywordFromUrl ?? document.getElementById("keyword-input").value;
+      const kw =
+        keywordFromUrl ??
+        document.getElementById("keyword-input").value;
+
       const errorDiv = document.getElementById("keyword-error");
       const btn = document.getElementById("ok-btn");
 
@@ -151,6 +334,10 @@
 
       errorDiv.innerText = "Loading page...";
       btn.disabled = true;
+
+      if (keywordFromUrl) {
+        setLoadingStatus("Loading content...");
+      }
 
       try {
         const res = await callBackend({
@@ -162,56 +349,99 @@
         btn.disabled = false;
 
         if (res.success && res.html) {
-          const blob = new Blob([res.html], { type: "text/html" });
+          setLoadingStatus("Preparing page...");
+
+          const blob = new Blob(
+            [res.html],
+            { type: "text/html" }
+          );
+
           const blobUrl = URL.createObjectURL(blob);
 
           document.body.innerHTML = "";
+
           document.body.style.margin = "0";
           document.body.style.overflow = "hidden";
 
           const iframe = document.createElement("iframe");
+
           iframe.src = blobUrl;
+
           iframe.style.cssText =
             "position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;";
-          iframe.allow = "autoplay; fullscreen; gamepad; keyboard-map *";
+
+          iframe.allow =
+            "autoplay; fullscreen; gamepad; keyboard-map *";
 
           document.body.appendChild(iframe);
+
           iframe.focus();
+
         } else {
-          errorDiv.innerText = res.error || "Keyword not found.";
+          const message =
+            res.error || "Keyword not found.";
+
+          if (keywordFromUrl) {
+            showLoadingError(message);
+          } else {
+            errorDiv.innerText = message;
+          }
         }
+
       } catch (err) {
         btn.disabled = false;
-        errorDiv.innerText = "Error loading page.";
+
+        if (keywordFromUrl) {
+          showLoadingError("Error loading page. Please try again.");
+        } else {
+          errorDiv.innerText = "Error loading page.";
+        }
       }
     }
 
-    // Permalinks:
-    // https://example.com/peakNET.html#password=YOUR_PASSWORD&keyword=YOUR_KEYWORD
-    // The hash is used instead of query parameters so credentials are not sent
-    // to the web server in the HTTP request.
+    // PERMALINK PARSER
+
     function getPermalinkData() {
       const hash = window.location.hash.replace(/^#/, "");
+
       const params = new URLSearchParams(hash);
+
       return {
-        password: params.get("password") || params.get("pw") || "",
-        keyword: params.get("keyword") || params.get("kw") || ""
+        password:
+          params.get("password") ||
+          params.get("pw") ||
+          "",
+
+        keyword:
+          params.get("keyword") ||
+          params.get("kw") ||
+          ""
       };
     }
+
+    // INITIALIZATION
 
     window.addEventListener("DOMContentLoaded", async () => {
       const permalink = getPermalinkData();
 
-      // If both values are present, authenticate and open the requested content.
+      // PERMALINK: show loading screen immediately.
       if (permalink.password && permalink.keyword) {
+        showLoadingScreen();
+
+        setLoadingStatus("Authenticating...");
+
         const valid = await verifyPassword(permalink.password);
+
         if (valid) {
+          setLoadingStatus("Loading content...");
+
           await fetchPage(permalink.keyword);
         }
+
         return;
       }
 
-      // Otherwise restore the current tab's session login as before.
+      // NORMAL SESSION LOGIN
       if (savedPassword) {
         showKeywordScreen();
       }
